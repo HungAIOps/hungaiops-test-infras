@@ -1,0 +1,18 @@
+---
+- name: Check if node has already joined the cluster
+  ansible.builtin.stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: k8s_installation__kubelet_conf_stat
+  become: true
+
+- name: Verify join command variable is defined
+  ansible.builtin.fail:
+    msg: "k8s_installation__cluster_join_command is not defined. Cannot join node to cluster."
+  when:
+    - not k8s_installation__kubelet_conf_stat.stat.exists
+    - k8s_installation__cluster_join_command is not defined
+
+- name: Join the node to cluster
+  ansible.builtin.command: "{{ k8s_installation__cluster_join_command }}"
+  become: true
+  when: not k8s_installation__kubelet_conf_stat.stat.exists

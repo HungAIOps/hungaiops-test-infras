@@ -1,0 +1,9 @@
+---
+- name: The VPC is present.
+  include_tasks: vpc_present.yaml
+
+- name: Remove AWS resources.
+  tags: [never, delete]
+  block:
+    - name: Include tasks in vpc_absent.yaml.
+      include_tasks: vpc_absent.yaml

@@ -1,0 +1,48 @@
+---
+- name: Create or update the VPC
+  amazon.aws.ec2_vpc_net:
+    name: "{{ vpc__vpc_name }}"
+    cidr_block: "{{ vpc__cidr }}"
+    dns_hostnames: true
+    dns_support: true
+    region: "{{ aws_region }}"
+    tags: "{{ vpc__resource_tags | combine({'Name': vpc__vpc_name}) }}"
+  register: _vpc_result
+
+- name: Set VPC id fact from result
+  ansible.builtin.set_fact:
+    vpc__vpc_id: "{{ _vpc_result.vpc.id }}"
+
+- name: Create or update the internet gateway
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{ vpc__vpc_id }}"
+    region: "{{ aws_region }}"
+    tags: "{{ vpc__resource_tags | combine({'Name': vpc__vpc_name ~ '-igw'}) }}"
+  register: _vpc__igw_result
+
+- name: Create the public subnets
+  amazon.aws.ec2_vpc_subnet:
+    vpc_id: "{{ vpc__vpc_id }}"
+    cidr: "{{ __vpc__subnet_info.cidr }}"
+    az: "{{ __vpc__subnet_info.az }}"
+    map_public: true
+    region: "{{ aws_region }}"
+    tags: "{{ vpc__resource_tags | combine({'Name': vpc__vpc_name ~ '-' ~ __vpc__subnet_info.name}) }}"
+  loop: "{{ vpc__public_subnets }}"
+  loop_control:
+    loop_var: __vpc__subnet_info
+  register: _vpc__public_subnet_results
+
+- name: Set public subnet ids fact from results
+  ansible.builtin.set_fact:
+    vpc__public_subnet_ids: "{{ _vpc__public_subnet_results.results | map(attribute='subnet.id') | list }}"
+
+- name: Create the public route table
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc__vpc_id }}"
+    region: "{{ aws_region }}"
+    subnets: "{{ vpc__public_subnet_ids }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ _vpc__igw_result.gateway_id }}"
+    tags: "{{ vpc__resource_tags | combine({'Name': vpc__vpc_name ~ '-public-rt'}) }}"

@@ -1,0 +1,13 @@
+---
+- name: Delete the MyAIOps test infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    # - role: ec2_inventory
+    #   tags: [ ec2_inventory ]
+    - role: ec2
+      tags: [ ec2 ]
+    - role: vpc
+      tags: [ vpc ]

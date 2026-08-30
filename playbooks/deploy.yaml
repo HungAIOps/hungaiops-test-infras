@@ -1,0 +1,54 @@
+---
+- name: Provision the MyAIOps test infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: vpc
+      tags: [ vpc ]
+
+    - role: ec2
+      tags: [ ec2 ]
+
+    - role: ec2_inventory
+      tags: [ ec2_inventory ]
+
+- name: Install K8S on master node
+  hosts: master_nodes
+  gather_facts: true
+
+  roles:
+    - role: k8s_installation
+      tags: [ k8s_master, k8s_worker ]
+      vars:
+        k8s_installation__is_master_node: true
+
+    - role: calico
+      tags: [ calico ]
+
+    - role: k8s_setup
+      tags: [ k8s_setup ]
+
+- name: Install K8S on worker nodes
+  hosts: worker_nodes
+  gather_facts: true
+
+  roles:
+    - role: k8s_installation
+      tags: [ k8s_worker ]
+      vars:
+        k8s_installation__is_master_node: false
+        k8s_installation__cluster_join_command: "{{ hostvars[groups['master_nodes'][0]]['k8s_installation__join_command'] }}"
+
+- name: Install K8S components
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  roles:
+    - role: ebs_csi_driver
+      tags: [ ebs_csi_driver ]
+
+    - role: istio
+      tags: [ istio ]

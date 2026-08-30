@@ -1,0 +1,37 @@
+---
+- name: Look up master instance by name tag
+  amazon.aws.ec2_instance_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Name": "{{ env_name }}-master-node"
+  register: _ec2__master_instance_lookup_result
+
+- name: Terminate the master instance
+  amazon.aws.ec2_instance:
+    instance_ids: "{{ _ec2__master_instance_lookup_result.instances | map(attribute='instance_id') | list }}"
+    region: "{{ aws_region }}"
+    state: absent
+    wait: true
+  when: _ec2__master_instance_lookup_result.instances | length > 0
+
+- name: Look up worker instances by name tag
+  amazon.aws.ec2_instance_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Name": "{{ env_name }}-worker-*"
+      instance-state-name: ["pending", "running", "stopping", "stopped"]
+  register: _ec2__worker_instance_lookup_result
+
+- name: Terminate the worker instances
+  amazon.aws.ec2_instance:
+    instance_ids: "{{ _ec2__worker_instance_lookup_result.instances | map(attribute='instance_id') | list }}"
+    region: "{{ aws_region }}"
+    state: absent
+    wait: true
+  when: _ec2__worker_instance_lookup_result.instances | length > 0
+
+- name: Remove the cluster security group
+  amazon.aws.ec2_security_group:
+    name: "{{ ec2__cluster_sg_name }}"
+    region: "{{ aws_region }}"
+    state: absent

@@ -1,0 +1,36 @@
+---
+- name: Create kubelet systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/kubelet.service.d
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Configure kubelet systemd unit and drop-in config
+  ansible.builtin.template:
+    src: "{{ __k8s_installation__kubelet_file.src }}"
+    dest: "{{ __k8s_installation__kubelet_file.dest }}"
+    mode: "0644"
+  become: true
+  loop:
+    - { src: kubelet.service.j2, dest: /etc/systemd/system/kubelet.service }
+    - { src: 10-kubeadm.conf.j2, dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf }
+  loop_control:
+    loop_var: __k8s_installation__kubelet_file
+  notify:
+    - Reload systemd daemon
+    - Restart kubelet
+
+- name: Enable kubelet service
+  ansible.builtin.systemd:
+    name: kubelet
+    enabled: true
+  become: true
+
+- name: Configure kubelet node ip
+  ansible.builtin.template:
+    src: kubelet-config.j2
+    dest: /etc/default/kubelet
+    mode: "0644"
+  become: true
+  notify: Restart kubelet

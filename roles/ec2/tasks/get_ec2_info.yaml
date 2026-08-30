@@ -1,0 +1,43 @@
+---
+- name: Query master instance
+  when: ec2__master_instance_info is not defined or ec2__master_instance_info is none
+  amazon.aws.ec2_instance_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Environment": "{{ env_name }}"
+      "tag:Name": "{{ ec2__master_node_name }}"
+      "instance-state-name": "running"
+  register: ec2__master_instance_info
+
+- name: Assert master instance exists
+  ansible.builtin.assert:
+    that:
+      - ec2__master_instance_info.instances | length == 1
+    fail_msg: >-
+      Expected exactly one master instance for cluster '{{ env_name }}',
+      but found
+      {{ ec2__master_instance_info.instances | length }}.
+
+- name: Store master instance ID
+  ansible.builtin.set_fact:
+    ec2__master_instance_id: >-
+      {{ ec2__master_instance_info.instances[0].instance_id }}
+
+- name: Query worker instances
+  when: ec2__worker_instances_info is not defined or ec2__worker_instances_info is none
+  amazon.aws.ec2_instance_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Environment": "{{ env_name }}"
+      "tag:Name": "{{ ec2__worker_node_name_prefix }}*"
+      "instance-state-name": "running"
+  register: ec2__worker_instances_info
+
+- name: Store worker instance IDs
+  ansible.builtin.set_fact:
+    ec2__worker_instance_ids: >-
+      {{
+        ec2__worker_instances_info.instances
+        | map(attribute='instance_id')
+        | list
+      }}

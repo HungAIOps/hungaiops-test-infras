@@ -1,0 +1,9 @@
+---
+# Enable ServiceAccount annotation for IRSA (IAM Roles for Service Accounts)
+ebs_csi_driver__enable_irsa: false
+
+# Enable EBS encryption by default
+ebs_csi_driver__enable_encryption: true
+
+# Enable volume scheduling capacity tracking
+ebs_csi_driver__enable_volume_scheduling: false

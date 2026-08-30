@@ -1,0 +1,18 @@
+---
+- name: Create the IAM role for SSM-managed EC2 instances
+  amazon.aws.iam_role:
+    name: "{{ ec2__ssm_iam_role_name }}"
+    assume_role_policy_document: "{{ lookup('template', 'ec2_trust_policy.json.j2') }}"
+    managed_policies:
+      - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+    state: present
+    tags: "{{ ec2__resource_tags | combine({'Name': ec2__ssm_iam_role_name}) }}"
+  register: _ec2__ssm_iam_role_result
+
+- name: Create the instance profile and attach the IAM role
+  amazon.aws.iam_instance_profile:
+    name: "{{ ec2__ssm_instance_profile_name }}"
+    role: "{{ ec2__ssm_iam_role_name }}"
+    state: present
+    tags: "{{ ec2__resource_tags | combine({'Name': ec2__ssm_instance_profile_name}) }}"
+  register: _ec2__ssm_instance_profile_result

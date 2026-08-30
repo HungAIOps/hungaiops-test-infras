@@ -1,0 +1,8 @@
+---
+- name: Create the SSM file-transfer S3 bucket
+  amazon.aws.s3_bucket:
+    name: "{{ ec2_inventory__ssm_s3_bucket }}"
+    region: "{{ aws_region }}"
+    state: present
+    tags: "{{ ec2_inventory__resource_tags | combine({'Name': ec2_inventory__ssm_s3_bucket}) }}"
+  register: ec2_inventory__ssm_bucket_result

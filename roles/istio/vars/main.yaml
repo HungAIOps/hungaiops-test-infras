@@ -1,0 +1,6 @@
+---
+istio__chart_version: 1.30.3
+istio__image_version: 1.30.3
+istio__namespace: istio-system
+istio__revision: default
+istio__autoscale_enabled: false

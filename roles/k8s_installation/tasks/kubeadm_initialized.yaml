@@ -1,0 +1,30 @@
+---
+- name: Check if Kubernetes cluster is already initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: _k8s_installation__admin_conf
+
+- name: Initialize Kubernetes control plane
+  when: not _k8s_installation__admin_conf.stat.exists
+  become: true
+  block:
+    - name: The kubeadm-config.yaml is rendered
+      ansible.builtin.template:
+        src: kubeadm-config.yaml.j2
+        dest: /tmp/kubeadm-config.yaml
+        force: true
+        mode: "0644"
+
+    - name: Initialize the Kubernetes cluster using kubeadm
+      ansible.builtin.command:
+        cmd: kubeadm init --config=/tmp/kubeadm-config.yaml
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Setup kubeconfig for {{ k8s_installation__home_user }} user
+      ansible.builtin.command: "{{ __k8s_installation__command }}"
+      loop:
+        - "mkdir -p /home/{{ k8s_installation__home_user }}/.kube"
+        - "cp -f /etc/kubernetes/admin.conf /home/{{ k8s_installation__home_user }}/.kube/config"
+        - "chown {{ k8s_installation__home_user }}:{{ k8s_installation__home_user }} /home/{{ k8s_installation__home_user }}/.kube/config"
+      loop_control:
+        loop_var: __k8s_installation__command

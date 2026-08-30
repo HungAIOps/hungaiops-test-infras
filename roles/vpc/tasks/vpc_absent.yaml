@@ -1,0 +1,61 @@
+---
+- name: Look up the VPC by name tag
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{ vpc__vpc_name }}"
+    region: "{{ aws_region }}"
+  register: vpc__vpc_lookup_result
+
+- name: Store the VPC identifier
+  ansible.builtin.set_fact:
+    vpc__vpc_id: "{{ vpc__vpc_lookup_result.vpcs[0].id }}"
+  when: vpc__vpc_lookup_result.vpcs | length > 0
+
+- name: Look up the public subnets by name tag
+  amazon.aws.ec2_vpc_subnet_info:
+    filters:
+      vpc-id: "{{ vpc__vpc_id }}"
+      "tag:Name": "{{ vpc__vpc_name }}-*"
+    region: "{{ aws_region }}"
+  register: vpc__public_subnet_lookup_result
+  when: vpc__vpc_id is defined
+
+- name: Store the public subnet identifiers
+  ansible.builtin.set_fact:
+    vpc__public_subnet_ids: "{{ vpc__public_subnet_lookup_result.subnets | map(attribute='id') | list }}"
+  when: vpc__vpc_id is defined
+
+- name: Remove the public route table
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ vpc__vpc_id }}"
+    region: "{{ aws_region }}"
+    tags: "{{ vpc__resource_tags | combine({'Name': vpc__vpc_name ~ '-public-rt'}) }}"
+    lookup: tag
+    state: absent
+  when: vpc__vpc_id is defined
+
+- name: Remove the public subnets
+  amazon.aws.ec2_vpc_subnet:
+    vpc_id: "{{ vpc__vpc_id }}"
+    cidr: "{{ __vpc__subnet_info.cidr }}"
+    region: "{{ aws_region }}"
+    state: absent
+  loop: "{{ vpc__public_subnets }}"
+  loop_control:
+    loop_var: __vpc__subnet_info
+  when: vpc__vpc_id is defined
+
+- name: Remove the internet gateway
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{ vpc__vpc_id }}"
+    region: "{{ aws_region }}"
+    state: absent
+  when: vpc__vpc_id is defined
+
+- name: Remove the VPC
+  amazon.aws.ec2_vpc_net:
+    name: "{{ vpc__vpc_name }}"
+    cidr_block: "{{ vpc__cidr }}"
+    region: "{{ aws_region }}"
+    state: absent
+  when: vpc__vpc_id is defined

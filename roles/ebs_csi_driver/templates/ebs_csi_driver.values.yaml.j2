@@ -1,0 +1,47 @@
+replicaCount: {{ enable_ha | ternary(2, 1) }}
+
+controller:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::{{ account_id }}:role/AmazonEKS_EBS_CSI_DriverRole"
+    create: true
+    name: ebs-csi-controller-sa
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 40Mi
+    limits:
+      memory: 256Mi
+
+  volumeModificationFeature:
+    enabled: true
+
+node:
+  serviceAccount:
+    create: true
+    name: ebs-csi-node-sa
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 40Mi
+    limits:
+      memory: 256Mi
+
+# Enable encryption by default for all PVCs
+storageClasses:
+  - name: ebs-sc
+    annotations:
+      storageclass.kubernetes.io/is-default-class: "false"
+    parameters:
+      type: gp3
+      iops: "3000"
+      throughput: "125"
+      encrypted: "{{ ebs_csi_driver__enable_encryption | lower }}"
+    reclaimPolicy: Delete
+    allowVolumeExpansion: true
+    volumeBindingMode: WaitForFirstConsumer
+
+enableVolumeScheduling: {{ ebs_csi_driver__enable_volume_scheduling | lower }}
+enableWindowsHostProcess: false

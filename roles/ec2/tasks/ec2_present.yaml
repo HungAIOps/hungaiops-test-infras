@@ -1,0 +1,62 @@
+---
+- name: Create the cluster security group
+  amazon.aws.ec2_security_group:
+    name: "{{ ec2__cluster_sg_name }}"
+    description: Security group for EC2 cluster nodes
+    vpc_id: "{{ vpc__vpc_id }}"
+    region: "{{ aws_region }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: "0.0.0.0/0"
+      - proto: tcp
+        from_port: 6443
+        to_port: 6443
+        cidr_ip: "0.0.0.0/0"
+      - proto: tcp
+        from_port: 30000
+        to_port: 32767
+        cidr_ip: "0.0.0.0/0"
+      - proto: all
+        group_name: "{{ ec2__cluster_sg_name }}"
+    rules_egress:
+      - proto: all
+        cidr_ip: 0.0.0.0/0
+    tags: "{{ ec2__resource_tags | combine({'Name': ec2__cluster_sg_name}) }}"
+  register: _ec2__node_sg_result
+
+- name: Launch the master instance
+  amazon.aws.ec2_instance:
+    name: "{{ ec2__master_node_name }}"
+    image_id: "{{ ec2__ami_id }}"
+    iam_instance_profile: "{{ ec2__ssm_instance_profile_name }}"
+    instance_type: "{{ ec2__master_instance_type }}"
+    vpc_subnet_id: "{{ vpc__public_subnet_ids[0] }}"
+    security_groups:
+      - "{{ _ec2__node_sg_result.group_id }}"
+    network:
+      assign_public_ip: true
+    wait: true
+    region: "{{ aws_region }}"
+    state: running
+    tags: "{{ ec2__resource_tags | combine({'Name': ec2__master_node_name}) }}"
+
+- name: Launch the worker instances
+  amazon.aws.ec2_instance:
+    name: "{{ ec2__worker_node_name_prefix }}-{{ __ec2__worker_index }}"
+    image_id: "{{ ec2__ami_id }}"
+    iam_instance_profile: "{{ ec2__ssm_instance_profile_name }}"
+    instance_type: "{{ ec2__worker_instance_type }}"
+    vpc_subnet_id: "{{ vpc__public_subnet_ids[(__ec2__worker_index + 1) % (vpc__public_subnet_ids | length)] }}"
+    security_groups:
+      - "{{ _ec2__node_sg_result.group_id }}"
+    network:
+      assign_public_ip: true
+    wait: true
+    region: "{{ aws_region }}"
+    state: running
+    tags: "{{ ec2__resource_tags | combine({'Name': ec2__worker_node_name_prefix ~ '-' ~ __ec2__worker_index}) }}"
+  loop: "{{ range(0, ec2__worker_instance_count | int) | list }}"
+  loop_control:
+    loop_var: __ec2__worker_index

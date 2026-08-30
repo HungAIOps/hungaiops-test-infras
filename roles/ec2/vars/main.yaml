@@ -1,0 +1,8 @@
+---
+ec2__node_ami_name: "ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-20260626"
+ec2__master_node_name: "{{ env_name }}-master-node"
+ec2__worker_node_name_prefix: "{{ env_name }}-worker-node"
+ec2__cluster_sg_name: "{{ env_name }}-cluster-node-sg"
+ec2__ssm_iam_role_name: "{{ env_name }}-ssm-iam-role"
+ec2__ssm_instance_profile_name: "{{ env_name }}-ssm-instance-profile"
+ec2__resource_tags: "{{ resource_tags | default({}) | combine({'ansible-role': 'ec2'}) }}"

@@ -1,0 +1,11 @@
+---
+- name: Look up AMI info by AMI name
+  amazon.aws.ec2_ami_info:
+    owners: ["099720109477"] # Canonical Owner ID for Ubuntu
+    filters:
+      name: "{{ ec2__node_ami_name }}"
+  register: _ec2__node_ami_info
+
+- name: Set AMI id fact
+  ansible.builtin.set_fact:
+    ec2__ami_id: "{{ _ec2__node_ami_info.images[0].image_id }}"

@@ -1,0 +1,12 @@
+---
+k8s_installation__containerd_version: "2.1.9"
+k8s_installation__runc_version: "1.3.6"
+
+k8s_installation__cluster_name: "{{ env_name }}-k8s-cluster"
+k8s_installation__pod_cidr: "10.32.0.0/16"
+k8s_installation__service_cidr: "10.96.0.0/12"
+
+k8s_installation__calico_helm_chart_version: "v3.28.0"
+k8s_installation__calico_pod_cidr: "192.168.0.0/16"
+
+k8s_installation__home_user: "ubuntu"

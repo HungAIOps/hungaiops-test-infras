@@ -1,0 +1,58 @@
+---
+- name: Determine kubeadm current major.minor
+  ansible.builtin.set_fact:
+    _k8s_installation__kubeadm_current_minor: >-
+      {{
+        _k8s_installation__kubeadm_current_version
+        | regex_replace('^([0-9]+\.[0-9]+)\..*', '\1')
+      }}
+
+- name: Determine target major.minor
+  ansible.builtin.set_fact:
+    _k8s_installation__k8s_target_minor: >-
+      {{
+        k8s_version
+        | regex_replace('^v', '')
+        | regex_replace('^([0-9]+\.[0-9]+)\..*', '\1')
+      }}
+
+- name: Build list of intermediate minor versions to step through
+  ansible.builtin.set_fact:
+    _k8s_installation__kubeadm_upgrade_path: >-
+      {{
+        range(
+          (_k8s_installation__kubeadm_current_minor.split('.')[1] | int) + 1,
+          (_k8s_installation__k8s_target_minor.split('.')[1] | int) + 1
+        )
+        | map('regex_replace', '^(.*)$', _k8s_installation__kubeadm_current_minor.split('.')[0] + '.\1')
+        | list
+      }}
+
+- name: Resolve latest stable patch for each intermediate minor
+  ansible.builtin.uri:
+    url: "https://dl.k8s.io/release/stable-{{ __k8s_installation__kubeadm_upgrade_minor }}.txt"
+    return_content: true
+  loop: "{{ _k8s_installation__kubeadm_upgrade_path }}"
+  loop_control:
+    loop_var: __k8s_installation__kubeadm_upgrade_minor
+  register: _k8s_installation__kubeadm_stable_lookup
+
+- name: Build final ordered list of versions to apply
+  ansible.builtin.set_fact:
+    _k8s_installation__kubeadm_apply_sequence: >-
+      {{
+        (_k8s_installation__kubeadm_stable_lookup.results
+          | default([])
+          | map(attribute='content')
+          | map('trim')
+          | list)
+        [:-1] + [k8s_version if k8s_version.startswith('v') else 'v' + k8s_version]
+      }}
+
+- name: Run kubeadm upgrade apply step by step across minor versions
+  ansible.builtin.command: "kubeadm upgrade apply {{ __k8s_installation__kubeadm_upgrade_version }} --upgrade-timeout 10m0s -y"
+  loop: "{{ _k8s_installation__kubeadm_apply_sequence }}"
+  loop_control:
+    loop_var: __k8s_installation__kubeadm_upgrade_version
+  become: true
+  notify: Restart kubelet

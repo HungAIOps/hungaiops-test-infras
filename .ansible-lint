@@ -1,0 +1,37 @@
+---
+# .ansible-lint
+
+profile: null
+
+exclude_paths:
+  - .git
+  - .cache
+
+quiet: false
+strict: false
+verbosity: 1
+
+loop_var_prefix: "^(__|{role}_)"
+
+var_naming_pattern: "^[a-z_][a-z0-9_]*$"
+
+use_default_rules: true
+
+skip_list:
+  - no-changed-when
+  - fqcn[action-core]
+  - name[template]
+
+enable_list:
+  - empty-string-compare
+  - no-log-password
+
+warn_list:
+  - command-instead-of-shell
+  - key-order[task]
+  - risky-file-permissions
+  - risky-shell-pipe
+
+offline: true
+
+task_name_prefix: "{stem} | "

@@ -1,0 +1,24 @@
+---
+- name: Add the EBS CSI driver Helm chart repository
+  kubernetes.core.helm_repository:
+    repo_name: aws-ebs-csi-driver
+    repo_url: "{{ ebs_csi_driver__helm_repo_url }}"
+
+- name: Render EBS CSI driver Helm values
+  ansible.builtin.template:
+    src: ebs_csi_driver.values.yaml.j2
+    dest: /tmp/ebs_csi_driver.values.yaml
+    mode: "0644"
+
+- name: Install or upgrade EBS CSI driver
+  kubernetes.core.helm:
+    release_name: "ebs-csi-driver"
+    chart_ref: "aws-ebs-csi-driver/aws-ebs-csi-driver"
+    chart_version: "{{ ebs_csi_driver__chart_version }}"
+    release_namespace: "kube-system"
+    kubeconfig: "{{ local_kubeconfig_path }}"
+    values_files:
+      - /tmp/ebs_csi_driver.values.yaml
+    wait: true
+    timeout: "5m"
+    atomic: true

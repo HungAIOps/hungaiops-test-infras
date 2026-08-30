@@ -1,0 +1,37 @@
+---
+- name: K8S installation prepared
+  ansible.builtin.import_tasks: k8s_installation_prepared.yaml
+
+- name: Set up prerequisites for K8S installation
+  ansible.builtin.import_tasks: k8s_prerequisites_setup.yaml
+
+- name: Install Docker and its dependent components
+  ansible.builtin.import_tasks: containerd_installed.yaml
+
+- name: Installing kubelet, kubeadm and kubectl
+  ansible.builtin.import_tasks: k8s_packages_installed.yaml
+
+- name: Configure kubelet service
+  ansible.builtin.import_tasks: kubelet_setup.yaml
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Initialize kubeadm on master node
+  ansible.builtin.import_tasks: kubeadm_initialized.yaml
+  when: k8s_installation__is_master_node
+
+- name: Upgrade kubeadm
+  ansible.builtin.import_tasks: kubeadm_upgraded.yaml
+  when: _k8s_installation__kubeadm_exists and _k8s_installation__kubeadm_tobe_upgraded
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Generate join command
+  ansible.builtin.import_tasks: kube_join_cmd.yaml
+  when: k8s_installation__is_master_node
+
+- name: Join the node to cluster
+  ansible.builtin.import_tasks: worker_node_joined.yaml
+  when: not k8s_installation__is_master_node

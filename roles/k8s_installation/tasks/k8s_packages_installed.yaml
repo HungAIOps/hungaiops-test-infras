@@ -1,0 +1,29 @@
+---
+- name: Install or upgrade Kubernetes binaries
+  when: (not _k8s_installation__kubeadm_exists) or _k8s_installation__kubeadm_tobe_upgraded
+  block:
+    - name: Install conntrack
+      ansible.builtin.apt:
+        name: "conntrack"
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Set k8s binary arch
+      ansible.builtin.set_fact:
+        _k8s_installation__k8s_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+
+    - name: Download and install Kubernetes binaries
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/v{{ k8s_version }}/bin/linux/{{ _k8s_installation__k8s_arch }}/{{ __k8s_installation__k8s_package }}"
+        dest: "/usr/local/bin/{{ __k8s_installation__k8s_package }}"
+        mode: "0755"
+        checksum: "sha256:{{ lookup('url', 'https://dl.k8s.io/release/v' + k8s_version + '/bin/linux/' + _k8s_installation__k8s_arch + '/' + __k8s_installation__k8s_package + '.sha256', split_lines=false) }}"
+      loop: >
+        {{
+          ['kubelet', 'kubeadm'] +
+          (['kubectl'] if k8s_installation__is_master_node else [])
+        }}
+      loop_control:
+        loop_var: __k8s_installation__k8s_package
+      become: true

@@ -1,0 +1,44 @@
+---
+- name: Query VPC by name tag
+  amazon.aws.ec2_vpc_net_info:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:Environment": "{{ env_name }}"
+      "tag:Name": "{{ vpc__vpc_name }}"
+  register: vpc__vpc_info
+  when: vpc__vpc_id is not defined or vpc__vpc_id is none
+
+- name: Assert VPC was found
+  ansible.builtin.assert:
+    that:
+      - vpc__vpc_info.vpcs | length == 1
+    fail_msg: >
+      Expected exactly one VPC tagged Name={{ vpc__vpc_name }}.
+      Has the vpc role been run yet?
+
+- name: Set VPC id fact from lookup
+  ansible.builtin.set_fact:
+    vpc__vpc_id: "{{ vpc__vpc_info.vpcs[0].id }}"
+
+- name: Look up public subnet ids
+  when: vpc__public_subnet_ids is not defined or vpc__public_subnet_ids is none
+  block:
+    - name: Query public subnets by tag
+      amazon.aws.ec2_vpc_subnet_info:
+        region: "{{ aws_region }}"
+        filters:
+          vpc-id: "{{ vpc__vpc_id }}"
+          "tag:Environment": "{{ env_name }}"
+          "tag:Name": "{{ vpc__vpc_name }}-public-subnet*"
+      register: vpc__public_subnet_info
+
+    - name: Set subnet ids fact from lookup
+      ansible.builtin.set_fact:
+        vpc__public_subnet_ids: "{{ vpc__public_subnet_info.subnets | map(attribute='id') | list }}"
+
+- name: Assert public subnets have at least 1 subnet
+  ansible.builtin.assert:
+    that:
+      - vpc__public_subnet_ids | length >= 1
+    fail_msg: >
+      Expected at least one subnet in VPC tagged Name={{ vpc__vpc_name }}

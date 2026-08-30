@@ -1,0 +1,3 @@
+---
+- name: Deploy EBS CSI driver
+  ansible.builtin.import_tasks: ebs_csi_driver_deployed.yaml

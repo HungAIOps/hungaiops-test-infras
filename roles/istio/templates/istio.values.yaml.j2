@@ -1,0 +1,20 @@
+hub: "docker.io/istio"
+tag: "{{ istio__image_version }}"
+
+replicaCount: 1
+
+autoscaleEnabled: {{ istio__autoscale_enabled }}
+autoscaleMin: 1
+autoscaleMax: 5
+autoscaleBehavior: {}
+replicaCount: 1
+rollingMaxSurge: 100%
+rollingMaxUnavailable: 25%
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "100m"
+    memory: "128Mi"

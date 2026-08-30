@@ -1,0 +1,3 @@
+---
+ec2_inventory__ssm_s3_bucket: "{{ env_name }}-ssm-file-transfer"
+ec2_inventory__resource_tags: "{{ resource_tags | default({}) | combine({'ansible-role': 'ec2_inventory'}) }}"

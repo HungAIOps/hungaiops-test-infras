@@ -1,0 +1,9 @@
+installation:
+  cni:
+    type: Calico
+  calicoNetwork:
+    ipPools:
+      - cidr: "{{ calico__pod_cidr }}"
+        encapsulation: VXLANCrossSubnet
+        natOutgoing: true
+        blockSize: 26

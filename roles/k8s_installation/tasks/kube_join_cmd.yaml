@@ -1,0 +1,9 @@
+---
+- name: Generate join command
+  ansible.builtin.command: kubeadm token create --print-join-command --kubeconfig /etc/kubernetes/admin.conf
+  register: _k8s_installation__join_command
+  become: true
+
+- name: Save join command as a fact
+  ansible.builtin.set_fact:
+    k8s_installation__join_command: "{{ _k8s_installation__join_command.stdout }}"

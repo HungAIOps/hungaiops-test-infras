@@ -1,0 +1,11 @@
+---
+vpc__vpc_name: "{{ env_name }}-vpc"
+vpc__cidr: 10.42.0.0/16
+vpc__public_subnets:
+  - name: "public-subnet-a"
+    cidr: 10.42.0.0/24
+    az: "{{ aws_region }}a"
+  - name: "public-subnet-b"
+    cidr: 10.42.1.0/24
+    az: "{{ aws_region }}b"
+vpc__resource_tags: "{{ resource_tags | default({}) | combine({'ansible-role': 'vpc'}) }}"

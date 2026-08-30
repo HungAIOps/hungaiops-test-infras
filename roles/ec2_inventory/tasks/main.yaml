@@ -1,0 +1,17 @@
+---
+- name: Get EC2 info
+  ansible.builtin.import_role:
+    name: ec2
+    tasks_from: get_ec2_info.yaml
+
+- name: S3 bucket for SSM file transfer is present
+  include_tasks: s3_present.yaml
+
+- name: Add EC2 instances to in-memory inventory
+  include_tasks: add_ec2_hosts.yaml
+
+- name: Remove AWS resources.
+  tags: [never, delete]
+  block:
+    - name: Include tasks in ec2_absent.yaml.
+      include_tasks: ec2_absent.yaml

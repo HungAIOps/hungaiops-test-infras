@@ -1,0 +1,59 @@
+---
+- name: Install or upgrade containerd
+  when: (not _k8s_installation__kubeadm_exists) or _k8s_installation__containerd_tobe_upgraded
+  become: true
+  block:
+    - name: Set containerd arch
+      ansible.builtin.set_fact:
+        _k8s_installation__containerd_arch: "{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}"
+
+    - name: Download containerd tarball
+      ansible.builtin.get_url:
+        url: "https://github.com/containerd/containerd/releases/download/v{{ k8s_installation__containerd_version }}/containerd-{{ k8s_installation__containerd_version }}-linux-{{ _k8s_installation__containerd_arch }}.tar.gz"
+        dest: "/tmp/containerd-{{ k8s_installation__containerd_version }}-linux-{{ _k8s_installation__containerd_arch }}.tar.gz"
+        mode: "0644"
+        checksum: "sha256:{{ lookup('url', 'https://github.com/containerd/containerd/releases/download/v' + k8s_installation__containerd_version + '/containerd-' + k8s_installation__containerd_version + '-linux-' + _k8s_installation__containerd_arch + '.tar.gz.sha256sum', split_lines=false).split()[0] }}"
+
+    - name: Extract containerd
+      ansible.builtin.unarchive:
+        src: "/tmp/containerd-{{ k8s_installation__containerd_version }}-linux-{{ _k8s_installation__containerd_arch }}.tar.gz"
+        dest: /usr/local
+        remote_src: true
+
+    - name: Setup containerd systemd unit
+      ansible.builtin.template:
+        src: containerd.service.j2
+        dest: /etc/systemd/system/containerd.service
+        mode: "0644"
+      notify: Restart containerd
+
+    - name: Download runc binary
+      ansible.builtin.get_url:
+        url: "https://github.com/opencontainers/runc/releases/download/v{{ k8s_installation__runc_version }}/runc.{{ _k8s_installation__containerd_arch }}"
+        dest: /usr/local/sbin/runc
+        mode: "0755"
+        checksum: "sha256:{{ lookup('url', 'https://github.com/opencontainers/runc/releases/download/v' + k8s_installation__runc_version + '/runc.sha256sum', split_lines=false) | regex_findall('([a-f0-9]{64})\\s+runc\\.' + _k8s_installation__containerd_arch) | first }}"
+      notify: Restart containerd
+
+- name: Ensure containerd configuration directory exists
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: "0755"
+  become: true
+
+- name: Setup containerd configuration
+  ansible.builtin.template:
+    src: containerd_config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+  become: true
+  notify: Restart containerd
+
+- name: Ensure containerd is started and enabled
+  ansible.builtin.systemd:
+    name: containerd
+    state: started
+    enabled: true
+    daemon_reload: true
+  become: true
