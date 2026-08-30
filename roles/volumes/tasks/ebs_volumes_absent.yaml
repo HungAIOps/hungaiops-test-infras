@@ -1,0 +1,15 @@
+---
+- name: Find EBS volumes associated with the cluster
+  amazon.aws.ec2_vol_info:
+    region: "{{ aws_region }}"
+    filters: "{{ ebs_csi_driver__resource_tags }}"
+  register: _volumes__volumes_to_delete
+
+- name: Delete EBS volumes associated with the cluster
+  amazon.aws.ec2_vol:
+    region: "{{ aws_region }}"
+    id: "{{ _volumes__deleted_volume.id }}"
+    state: absent
+  loop: "{{ _volumes__volumes_to_delete.volumes }}"
+  loop_control:
+    loop_var: __volumes__deleted_volume

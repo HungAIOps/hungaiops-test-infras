@@ -5,6 +5,7 @@
     assume_role_policy_document: "{{ lookup('template', 'ec2_trust_policy.json.j2') }}"
     managed_policies:
       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
     state: present
     tags: "{{ ec2__resource_tags | combine({'Name': ec2__ssm_iam_role_name}) }}"
   register: _ec2__ssm_iam_role_result

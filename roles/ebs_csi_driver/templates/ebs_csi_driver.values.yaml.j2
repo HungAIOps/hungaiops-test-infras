@@ -2,8 +2,6 @@ replicaCount: {{ enable_ha | ternary(2, 1) }}
 
 controller:
   serviceAccount:
-    annotations:
-      eks.amazonaws.com/role-arn: "arn:aws:iam::{{ account_id }}:role/AmazonEKS_EBS_CSI_DriverRole"
     create: true
     name: ebs-csi-controller-sa
 
@@ -16,6 +14,9 @@ controller:
 
   volumeModificationFeature:
     enabled: true
+
+  extraVolumeTags: 
+    {{ ebs_csi_driver__resource_tags | to_nice_yaml(indent=4) | indent(4) }}
 
 node:
   serviceAccount:

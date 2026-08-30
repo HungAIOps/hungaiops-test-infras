@@ -1,0 +1,6 @@
+---
+- name: Remove AWS resources.
+  tags: [never, delete]
+  block:
+    - name: Include tasks in ebs_volumes_absent.yaml.
+      include_tasks: ebs_volumes_absent.yaml

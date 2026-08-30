@@ -1,3 +1,4 @@
 ---
 ebs_csi_driver__helm_repo_url: "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
 ebs_csi_driver__chart_version: "2.35.0"
+ebs_csi_driver__resource_tags: "{{ resource_tags | default({}) | combine({'ansible-role': 'ebs_csi_driver'}) }}"
