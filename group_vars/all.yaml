@@ -12,5 +12,5 @@ local_kubeconfig_path: "{{ inventory_dir }}/cluster-admin.conf"
 enable_ha: false
 
 resource_tags:
-  Project: MyAIOps
+  Project: HungAIOps
   Environment: "{{ env_name }}"

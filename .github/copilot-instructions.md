@@ -2,7 +2,7 @@
 
 ## Workspace Overview
 This repository is an Ansible monorepo to create a test environment for the
-MyAIOps project. It's roles include creating a K8s cluster running on EC2
+HungAIOps project. It's roles include creating a K8s cluster running on EC2
 instances and installing fundamental K8s components into the cluster.
 
 Project structure:

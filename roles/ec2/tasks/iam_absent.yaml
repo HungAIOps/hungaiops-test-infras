@@ -1,0 +1,11 @@
+---
+- name: Remove the instance profile
+  amazon.aws.iam_instance_profile:
+    name: "{{ ec2__ssm_instance_profile_name }}"
+    state: absent
+
+- name: Remove the IAM role for SSM-managed EC2 instances
+  amazon.aws.iam_role:
+    name: "{{ ec2__ssm_iam_role_name }}"
+    managed_policies: []
+    state: absent

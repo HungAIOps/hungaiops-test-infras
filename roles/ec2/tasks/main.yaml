@@ -18,3 +18,5 @@
   block:
     - name: Include tasks in ec2_absent.yaml.
       include_tasks: ec2_absent.yaml
+    - name: Include tasks in iam_absent.yaml.
+      include_tasks: iam_absent.yaml
